@@ -1,34 +1,41 @@
-# ATENÇÃO: ESTE ARQUIVO CONTÉM PROBLEMAS INTENCIONAIS.
-# Use o Copilot para diagnosticar e corrigir.
-
 import unicodedata
+import re
+from typing import Iterable, List, Tuple
+
+def _remover_acentos(s: str) -> str:
+    nf = unicodedata.normalize("NFD", s)
+    return "".join(ch for ch in nf if unicodedata.category(ch) != "Mn")
 
 def eh_palindromo(texto: str) -> bool:
     if not isinstance(texto, str):
         return False
-    # PROBLEMA: não normaliza adequadamente, não remove não alfanumérico
-    t = texto.lower().replace(" ", "")
-    return t == t[::-1]
+    s = _remover_acentos(texto.lower())
+    s = re.sub(r"[^a-z0-9]", "", s)
+    return s == s[::-1]
 
-def intersecao_unica(lista1, lista2):
-    inter = []
-    for x in lista1:
-        for y in lista2:
-            if x == y:
-                inter.append(x)
-    return inter  # sem deduplicar/ordenar
+def intersecao_unica(lista1: Iterable, lista2: Iterable) -> List:
+    set1, set2 = set(lista1), set(lista2)
+    inter = sorted(set1 & set2)
+    return inter
 
-def soma_intervalos(intervalos):
-    if not intervalos:
+def soma_intervalos(intervalos: Iterable[Tuple[int,int]]) -> int:
+    iv = list(intervalos)
+    if not iv:
         return 0
-    intervalos = sorted(intervalos, key=lambda x: x[1])
+    iv.sort(key=lambda x: x[0])
+
     total = 0
-    atual_ini, atual_fim = intervalos[0]
-    for ini, fim in intervalos[1:]:
-        if ini < atual_fim:  # não considera toque ini == atual_fim
-            atual_fim = max(atual_fim, fim)
+    cur_ini, cur_fim = iv[0]
+
+    for ini, fim in iv[1:]:
+        if fim < ini:
+            ini, fim = fim, ini
+        if ini <= cur_fim:  # mescla se toca (fim == ini) ou sobrepõe
+            if fim > cur_fim:
+                cur_fim = fim
         else:
-            total += (atual_fim - atual_ini)
-            atual_ini, atual_fim = ini, fim
-    total += (atual_fim - atual_ini)
+            total += (cur_fim - cur_ini)
+            cur_ini, cur_fim = ini, fim
+
+    total += (cur_fim - cur_ini)
     return total
